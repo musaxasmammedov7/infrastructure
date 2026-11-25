@@ -10,9 +10,9 @@ What changed: [changes/2026-11-25.md](../changes/2026-11-25.md)
 
 ![Network](2-network.png)
 
-## Environment Azure subscription 1
+## Other subscriptions
 
-![Environment Azure subscription 1](3-env-azure-subscription-1.png)
+![Other subscriptions](3-env-other-subscriptions.png)
 
 ## Monitoring
 
