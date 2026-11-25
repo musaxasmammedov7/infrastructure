@@ -120,6 +120,8 @@ def main():
 
     dst = ROOT / "changes" / f"{new_p.stem}.json"
     dst.parent.mkdir(exist_ok=True)
+    for old in dst.parent.glob(f"{new_p.stem}*"):  # one change file per day
+        old.unlink()
     dst.write_text(json.dumps(out, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
     dst.with_suffix(".md").write_text(report(out))
     print(f'added {len(out["added"])}, changed {len(out["changed"])}, removed {len(out["removed"])}'
