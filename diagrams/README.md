@@ -1,6 +1,6 @@
-# Azure diagrams — 2026-11-25T1306
+# Azure diagrams — 2026-11-25T1318
 
-Changes: 0 added, 0 changed, 0 removed since 2026-11-25T1300 — details: [changes/2026-11-25T1306.md](../changes/2026-11-25T1306.md)
+Changes: 1 added, 0 changed, 0 removed since 2026-11-25T1306 — details: [changes/2026-11-25T1318.md](../changes/2026-11-25T1318.md)
 
 ## Infra Azure subscription 1
 
