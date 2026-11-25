@@ -1019,7 +1019,7 @@ def config_pages(m, cfg, date, summary):
             plan.append((pc, members, fname))
             where.update({s: fname for s in members})
     rest = sorted((s for s in present if s not in where), key=lambda s: m.subs[s])
-    where.update({s: "other-subscriptions" for s in rest})
+    where.update({s: "subscriptions/other" for s in rest})
     pages = []
     for pc, members, fname in plan:
         title = pc["name"].split("/")[-1]
@@ -1028,7 +1028,7 @@ def config_pages(m, cfg, date, summary):
         else:
             pages.append((fname, side_by_side_page(m, title, members, date, summary, where=where)))
     if rest:
-        pages.append(("other-subscriptions",
+        pages.append(("subscriptions/other",
                       side_by_side_page(m, "Other subscriptions", rest, date, summary, cols=2, where=where)))
     return pages
 
