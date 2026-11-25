@@ -12,9 +12,9 @@ What changed: [changes/2026-11-25.md](../changes/2026-11-25.md)
 
 ## Other subscriptions
 
-![Other subscriptions](3-env-other-subscriptions.png)
+![Other subscriptions](other-subscriptions.png)
 
 ## Monitoring
 
-![Monitoring](4-monitoring.png)
+![Monitoring](monitoring.png)
 
