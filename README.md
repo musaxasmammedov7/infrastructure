@@ -7,8 +7,9 @@ Weekly, automatic, read-only.
    (webhook URLs, e-mails, keys and Logic App definitions are replaced by a hash).
 3. `scripts/diff.py` compares it with the previous snapshot and writes `changes/<date>.json`:
    added / changed (old → new) / removed, and who did it (Azure change history, last 8 days).
-4. `scripts/render.py` builds Mermaid diagrams in [`diagrams/`](diagrams/README.md):
-   overview, network, environment, monitoring, access, changes.
+4. `scripts/render.py` builds draw.io diagrams in [`diagrams/`](diagrams/README.md)
+   (one infra page per subscription, monitoring, access, changes); draw.io exports them to PNG + SVG.
+   Human-readable change list: `changes/<date>.md`.
 5. The workflow commits the results. Runs every Monday 06:00 UTC, or manually:
    Actions → azure-diagrams → Run workflow.
 
