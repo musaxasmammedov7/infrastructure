@@ -6,8 +6,7 @@ One .drawio file per diagram in build/; the workflow exports each to diagrams/<n
   2-infra-<subscription>.drawio  VNets -> subnets -> resources, services, Internet exposure
   3-monitoring.drawio         data collection and alert routing
   4-access.drawio             who has which role where
-  5-changes.drawio            added / changed / removed since the previous snapshot
-Status: green border = added, orange = changed, red dashed = removed, red solid = risk.
+Diagrams show the current state only (changes are in changes/<date>.md). Red border = open to the Internet.
 Optional 2nd argument: write an approximate SVG preview of every page into that folder.
 """
 import collections
@@ -405,14 +404,11 @@ def receivers(ag):
 def infra_page(m, sub_id, sub_name, date, summary):
     page = Page(f"Infra {sub_name}",
                 f"<b style='font-size:20px'>Azure infrastructure — {h(sub_name)}</b><br>"
-                f"Snapshot {date} · changes: {h(summary)}<br>"
-                "<font color='#1A7F37'>■ added</font>  <font color='#BF8700'>■ changed</font>  "
-                "<font color='#CF222E'>┅ removed · ■ risk (open to Internet / broad role)</font>  "
-                "<font color='#C9A227'>→ Internet traffic</font>  <font color='#9673A6'>┅ private link</font>  "
-                "<font color='#2E75B6'>━ peering</font>")
+                f"Snapshot {date}<br>"
+                "<font color='#CF222E'>■ red border = open to the Internet</font>  "
+                "<font color='#2E75B6'>━ VNet peering</font>  <font color='#B85450'>┅ VPN</font>")
     res = {rid: r for rid, r in m.res.items() if r["subscriptionId"] == sub_id}
     top = page.root.add(cont(f"top:{sub_id}", "", "plain", "h"))
-    top.add(card("internet", "<b>Internet</b>", "External", w=160))
     body = page.root.add(cont(f"body:{sub_id}", "", "plain", "h"))
     vcol = body.add(cont(f"vcol:{sub_id}", "", "plain", "v"))
     scol = body.add(cont(f"scol:{sub_id}", "", "plain", "grid", cols=2))
@@ -560,6 +556,8 @@ def infra_page(m, sub_id, sub_name, date, summary):
                        "<b>Alerts &amp; collection</b><br>" + "<br>".join(f"{n} {h(k)}" for k, n in sorted(mon_summary.items())) +
                        "<br><i>details: monitoring diagram</i>", "Monitoring", st))
 
+    # keep only container-to-container links (peering, VPN); exposure is shown on the card itself
+    page.edges = [e for e in page.edges if e[2] in (E_PEER, E_VPN)]
     # anything an edge points to that is not on this page -> stub in "Outside this subscription"
     present = {b.key for b, _ in page.root.walk()}
     stubs = [t for s, t, _, _ in page.edges if t not in present] + [s for s, t, _, _ in page.edges if s not in present]
@@ -571,6 +569,8 @@ def infra_page(m, sub_id, sub_name, date, summary):
             sub = m.subs.get(r["subscriptionId"], "") if r else ""
             ext.add(card(k, f"<b>{h(name)}</b><br>{h(short(r['type']) if r else 'resource')}" + (f"<br>{h(sub)}" if sub else ""),
                          "External"))
+    if not top.children:
+        page.root.children.remove(top)
     return page
 
 
@@ -844,12 +844,9 @@ def main():
     snaps = sorted((ROOT / "snapshots").glob("*.json"))
     snap = json.loads(snaps[-1].read_text())
     date = snaps[-1].stem
-    ch_p = ROOT / "changes" / f"{date}.json"
-    ch = json.loads(ch_p.read_text()) if ch_p.exists() else {"to": date, "from": None,
-                                                             "added": [], "changed": [], "removed": []}
-    m = Model(snap, ch)
-    summary = (f"{len(ch['added'])} added, {len(ch['changed'])} changed, {len(ch['removed'])} removed since {ch['from']}"
-               if ch.get("from") else "first snapshot (baseline)")
+    # Diagrams show the current state only; what changed is in changes/<date>.md.
+    m = Model(snap, {"added": [], "changed": [], "removed": []})
+    summary = ""
 
     pages = []
     subs_with_res = [s for s in sorted(m.subs, key=lambda s: m.subs[s]) if any(r["subscriptionId"] == s for r in m.res.values())]
@@ -859,14 +856,13 @@ def main():
         pages.append((f"2-infra-{slug(m.subs[s])}", infra_page(m, s, m.subs[s], date, summary)))
     pages.append(("3-monitoring", monitoring_page(m, date)))
     pages.append(("4-access", access_page(m, date)))
-    pages.append(("5-changes", changes_page(m, date)))
 
     OUT.mkdir(exist_ok=True)
     BUILD.mkdir(exist_ok=True)
     for old in [p for d in (OUT, BUILD) for p in d.iterdir() if p.is_file()]:
         old.unlink()
     preview = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else None
-    index = [f"# Azure diagrams — {date}", "", f"Changes: {summary} — details: [changes/{date}.md](../changes/{date}.md)", ""]
+    index = [f"# Azure diagrams — {date}", "", f"What changed: [changes/{date}.md](../changes/{date}.md)", ""]
     for fname, page in pages:
         (BUILD / f"{fname}.drawio").write_text(page.build())
         if preview:
@@ -874,10 +870,7 @@ def main():
             (preview / f"{fname}.svg").write_text(page.preview_svg())
         index += [f"## {page.name}", "", f"![{page.name}]({fname}.png)", ""]
     (OUT / "README.md").write_text("\n".join(index) + "\n")
-    print(f"## Azure diagrams {date}\n\n{summary}\n")
-    for kind in ("added", "changed", "removed"):
-        for x in ch.get(kind, []):
-            print(f"- {kind}: {x.get('name')} ({short(x.get('type'))}) by {x.get('by') or 'unknown'}")
+    print(f"## Azure diagrams {date}\n\n" + "\n".join(f"- {n}.png" for n, _ in pages))
 
 
 if __name__ == "__main__":
