@@ -935,6 +935,89 @@ def group_model(m, members, tokens):
     return g, gid, title
 
 
+# ------------------------------------------------------------------ pages from config.yml
+def load_config(path):
+    """Tiny reader for config.yml:  - name: X  /  merge: [a, b]  or  side_by_side: [a, b]"""
+    pages, cur = [], None
+    for raw in path.read_text().splitlines():
+        line = raw.split("#", 1)[0].rstrip()
+        mt = re.match(r"\s*-\s*name:\s*(.+)$", line)
+        if mt:
+            cur = {"name": mt.group(1).strip(), "mode": "side_by_side", "subs": []}
+            pages.append(cur)
+            continue
+        mt = re.match(r"\s*(merge|side_by_side):\s*\[(.*)\]\s*$", line)
+        if mt and cur is not None:
+            cur["mode"], cur["subs"] = mt.group(1), [x.strip() for x in mt.group(2).split(",") if x.strip()]
+    return pages
+
+
+def vpn_block(m, members):
+    """External networks reached by VPN from these subscriptions (one card per tunnel)."""
+    box = cont("vpn:" + "-".join(members), "<b>External networks (VPN)</b>", "ext", "grid", cols=2)
+    for c in m.of_type("microsoft.network/connections"):
+        if c["subscriptionId"] not in members:
+            continue
+        p = P(c)
+        lng = m.owner((p.get("localNetworkGateway2") or {}).get("id"))
+        lp = P(m.res[lng]) if lng else {}
+        status = p.get("connectionStatus", "")
+        label = (f"<b>{h(m.subs[c['subscriptionId']])} ⇄ {h(m.res[lng]['name'] if lng else '?')}</b><br>"
+                 f"{h(p.get('connectionType', ''))} · peer {h(lp.get('gatewayIpAddress', ''))} · "
+                 f"{h(', '.join((lp.get('localNetworkAddressSpace') or {}).get('addressPrefixes', [])))}<br>"
+                 + (h(status) if status == "Connected" else f"<font color='#CF222E'>⚠ {h(status or 'unknown')}</font>"))
+        box.add(card("vpn:" + c["id"], label, "External", w=330))
+    return box if box.children else None
+
+
+def side_by_side_page(m, name, members, date, summary, cols=None):
+    page = Page(name, f"<b style='font-size:20px'>{h(name)}</b><br>Snapshot {date} · "
+                      + " · ".join(h(m.subs[s]) for s in members) + "<br>"
+                      "<font color='#CF222E'>■ red border = open to the Internet</font>")
+    vb = vpn_block(m, members)
+    if vb:
+        page.root.add(vb)
+    row = page.root.add(cont("sbs:" + name, "", "plain", "grid", cols=cols or len(members)))
+    for s in members:
+        one = infra_page(m, s, m.subs[s], date, summary)
+        box = row.add(cont("sbs:" + s, f"<b>{h(m.subs[s])}</b>", "sub", "v"))
+        box.children = one.root.children[1:]
+    return page
+
+
+def merged_page(m, members, date, summary):
+    tokens = {s: env_tokens([r for r in m.res.values() if r["subscriptionId"] == s and not r["type"].startswith(HIDE)
+                             and not r["resourceGroup"].startswith("mc_")], m.subs[s]) for s in members}
+    gm, gid, title = group_model(m, members, tokens)
+    page = infra_page(gm, gid, title, date, summary)
+    page.root.children[0].label = page.root.children[0].label.replace(
+        "Snapshot", "Same structure — names use &lt;env&gt;; “only in” = not in every environment<br>Snapshot", 1)
+    return page
+
+
+def config_pages(m, cfg, date, summary):
+    by_name = {n.lower(): s for s, n in m.subs.items()}
+    present = {r["subscriptionId"] for r in m.res.values()}
+    used, pages = set(), []
+    for pc in cfg:
+        members = [by_name[x.lower()] for x in pc["subs"] if x.lower() in by_name and by_name[x.lower()] in present]
+        if not members:
+            continue
+        used.update(members)
+        fname = f"3-env-{slug(pc['name'])}"
+        if pc["mode"] == "merge" and len(members) > 1:
+            pages.append((fname, merged_page(m, members, date, summary)))
+        elif len(members) == 1:
+            pages.append((fname, infra_page(m, members[0], m.subs[members[0]], date, summary)))
+        else:
+            pages.append((fname, side_by_side_page(m, pc["name"], members, date, summary)))
+    rest = sorted((s for s in present if s not in used), key=lambda s: m.subs[s])
+    if rest:
+        pages.append(("3-env-other-subscriptions",
+                      side_by_side_page(m, "Other subscriptions", rest, date, summary, cols=2)))
+    return pages
+
+
 # ------------------------------------------------------------------ main
 def slug(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:40] or "sub"
@@ -952,33 +1035,37 @@ def main():
     subs_with_res = [s for s in sorted(m.subs, key=lambda s: m.subs[s]) if any(r["subscriptionId"] == s for r in m.res.values())]
     pages.append(("1-overview", overview_page(m, date, summary)))
     pages.append(("2-network", network_page(m, date)))
-    groups, tokens = group_subscriptions(m, subs_with_res)
-    SMALL = 20
-    size = collections.Counter(r["subscriptionId"] for r in m.res.values() if not r["type"].startswith(HIDE))
-    small = [g[0] for g in groups if len(g) == 1 and size[g[0]] < SMALL]
-    if len(small) < 2:  # a single small subscription keeps its own page
-        small = []
-    groups = [g for g in groups if not (len(g) == 1 and g[0] in small)]
-    for members in sorted(groups, key=lambda g: (len(g) == 1, m.subs[g[0]])):
-        if len(members) == 1:
-            s = members[0]
-            pages.append((f"3-env-{slug(m.subs[s])}", infra_page(m, s, m.subs[s], date, summary)))
-        else:
-            gm, gid, title = group_model(m, members, tokens)
-            page = infra_page(gm, gid, title, date, summary)
-            page.root.children[0].label = page.root.children[0].label.replace(
-                "Snapshot", "Same structure — names use &lt;env&gt;; “only in” = not in every environment<br>Snapshot", 1)
-            pages.append((f"3-env-{slug('-'.join(sorted(m.subs[x] for x in members)))}", page))
-    if small:
-        combo = Page("Small subscriptions", "<b style='font-size:20px'>Small subscriptions</b><br>"
-                     f"Snapshot {date} · subscriptions with fewer than {SMALL} resources<br>"
-                     "<font color='#CF222E'>■ red border = open to the Internet</font>")
-        grid = combo.root.add(cont("small:grid", "", "plain", "grid", cols=2))
-        for s in sorted(small, key=lambda x: m.subs[x]):
-            one = infra_page(m, s, m.subs[s], date, summary)
-            box = grid.add(cont("small:" + s, f"<b>{h(m.subs[s])}</b>", "sub", "v"))
-            box.children = one.root.children[1:]
-        pages.append(("3-env-small-subscriptions", combo))
+    cfg_path = ROOT / "config.yml"
+    if cfg_path.exists():  # explicit grouping, see config.yml
+        pages += config_pages(m, load_config(cfg_path), date, summary)
+    else:                  # no config: guess similar environments automatically
+        groups, tokens = group_subscriptions(m, subs_with_res)
+        SMALL = 20
+        size = collections.Counter(r["subscriptionId"] for r in m.res.values() if not r["type"].startswith(HIDE))
+        small = [g[0] for g in groups if len(g) == 1 and size[g[0]] < SMALL]
+        if len(small) < 2:  # a single small subscription keeps its own page
+            small = []
+        groups = [g for g in groups if not (len(g) == 1 and g[0] in small)]
+        for members in sorted(groups, key=lambda g: (len(g) == 1, m.subs[g[0]])):
+            if len(members) == 1:
+                s = members[0]
+                pages.append((f"3-env-{slug(m.subs[s])}", infra_page(m, s, m.subs[s], date, summary)))
+            else:
+                gm, gid, title = group_model(m, members, tokens)
+                page = infra_page(gm, gid, title, date, summary)
+                page.root.children[0].label = page.root.children[0].label.replace(
+                    "Snapshot", "Same structure — names use &lt;env&gt;; “only in” = not in every environment<br>Snapshot", 1)
+                pages.append((f"3-env-{slug('-'.join(sorted(m.subs[x] for x in members)))}", page))
+        if small:
+            combo = Page("Small subscriptions", "<b style='font-size:20px'>Small subscriptions</b><br>"
+                         f"Snapshot {date} · subscriptions with fewer than {SMALL} resources<br>"
+                         "<font color='#CF222E'>■ red border = open to the Internet</font>")
+            grid = combo.root.add(cont("small:grid", "", "plain", "grid", cols=2))
+            for s in sorted(small, key=lambda x: m.subs[x]):
+                one = infra_page(m, s, m.subs[s], date, summary)
+                box = grid.add(cont("small:" + s, f"<b>{h(m.subs[s])}</b>", "sub", "v"))
+                box.children = one.root.children[1:]
+            pages.append(("3-env-small-subscriptions", combo))
     pages.append(("4-monitoring", monitoring_page(m, date)))
 
     OUT.mkdir(exist_ok=True)
