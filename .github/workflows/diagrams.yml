@@ -67,12 +67,15 @@ jobs:
         timeout-minutes: 5
         run: |
           # draw.io needs absolute paths and exits 0 even on errors, so check the output files.
-          for f in "$GITHUB_WORKSPACE"/build/*.drawio; do
-            png="$GITHUB_WORKSPACE/diagrams/$(basename "${f%.drawio}").png"
-            xvfb-run -a drawio -x -f png --scale 1.5 -b 10 -o "$png" "$f" --no-sandbox --disable-gpu 2>&1 | grep -v bus.cc || true
+          cd "$GITHUB_WORKSPACE"
+          while read -r rel; do
+            f="$GITHUB_WORKSPACE/$rel"
+            png="$GITHUB_WORKSPACE/diagrams/${rel#build/}"; png="${png%.drawio}.png"
+            mkdir -p "$(dirname "$png")"
+            xvfb-run -a drawio -x -f png --scale 1.5 -b 10 -o "$png" "$f" --no-sandbox --disable-gpu < /dev/null 2>&1 | grep -v bus.cc || true
             test -s "$png" || { echo "::error::export failed for $f"; exit 1; }
-          done
-          ls -la diagrams
+          done < <(find build -name '*.drawio')
+          find diagrams -type f | sort
 
       - name: Commit results
         run: |
