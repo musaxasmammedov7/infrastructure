@@ -4,6 +4,14 @@
    "changeType": "Create",
    "changedBy": "musaxasmammedov83@gmail.com",
    "clientType": "Azure Portal",
+   "operation": "Microsoft.Storage/storageAccounts/write",
+   "t": "2026-11-25T13:40:39.332Z",
+   "targetId": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.storage/storageaccounts/uffgdfhjy"
+  },
+  {
+   "changeType": "Create",
+   "changedBy": "musaxasmammedov83@gmail.com",
+   "clientType": "Azure Portal",
    "operation": "Microsoft.Network/networkSecurityGroups/write",
    "t": "2026-11-25T13:26:45.697Z",
    "targetId": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.network/networksecuritygroups/ecrv2"
@@ -572,6 +580,68 @@
    "subscriptionId": "b81f58c4-2bb2-42e5-a0ed-221ef09554f9",
    "tags": {},
    "type": "microsoft.storage/storageaccounts"
+  },
+  {
+   "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.storage/storageaccounts/uffgdfhjy",
+   "identity": null,
+   "kind": "StorageV2",
+   "location": "eastus",
+   "name": "uffgdfhjy",
+   "properties": {
+    "accessTier": "Hot",
+    "allowBlobPublicAccess": false,
+    "allowCrossTenantDelegationSas": false,
+    "allowCrossTenantReplication": false,
+    "creationTime": "2026-11-25T13:40:12.938Z",
+    "encryption": {
+     "keySource": "Microsoft.Storage",
+     "services": {
+      "blob": {
+       "enabled": true,
+       "keyType": "Account",
+       "lastEnabledTime": "2026-11-25T13:40:13.37Z"
+      },
+      "file": {
+       "enabled": true,
+       "keyType": "Account",
+       "lastEnabledTime": "2026-11-25T13:40:13.37Z"
+      }
+     }
+    },
+    "keyCreationTime": {
+     "key1": "2026-11-25T13:40:13.36Z",
+     "key2": "2026-11-25T13:40:13.36Z"
+    },
+    "minimumTlsVersion": "TLS1_0",
+    "networkAcls": {
+     "bypass": "None",
+     "defaultAction": "Allow",
+     "ipRules": [],
+     "ipv6Rules": [],
+     "virtualNetworkRules": []
+    },
+    "primaryEndpoints": {
+     "blob": "https://uffgdfhjy.blob.core.windows.net/",
+     "dfs": "https://uffgdfhjy.dfs.core.windows.net/",
+     "file": "https://uffgdfhjy.file.core.windows.net/",
+     "queue": "https://uffgdfhjy.queue.core.windows.net/",
+     "table": "https://uffgdfhjy.table.core.windows.net/",
+     "web": "https://uffgdfhjy.z13.web.core.windows.net/"
+    },
+    "primaryLocation": "eastus",
+    "privateEndpointConnections": [],
+    "provisioningState": "Succeeded",
+    "statusOfPrimary": "available",
+    "supportsHttpsTrafficOnly": true
+   },
+   "resourceGroup": "tritinain",
+   "sku": {
+    "name": "Standard_LRS",
+    "tier": "Standard"
+   },
+   "subscriptionId": "b81f58c4-2bb2-42e5-a0ed-221ef09554f9",
+   "tags": {},
+   "type": "microsoft.storage/storageaccounts"
   }
  ],
  "roles": [
@@ -590,5 +660,5 @@
    "scope": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9"
   }
  ],
- "taken": "2026-11-25T13:32:10+00:00"
+ "taken": "2026-11-25T13:41:39+00:00"
 }
