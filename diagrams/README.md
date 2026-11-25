@@ -1,6 +1,6 @@
 # Azure diagrams — 2026-11-25
 
-Changes: 1 added, 0 changed, 0 removed since 2026-11-25 13:32 UTC — details: [changes/2026-11-25.md](../changes/2026-11-25.md)
+What changed: [changes/2026-11-25.md](../changes/2026-11-25.md)
 
 ## Infra Azure subscription 1
 
@@ -13,8 +13,4 @@ Changes: 1 added, 0 changed, 0 removed since 2026-11-25 13:32 UTC — details: [
 ## Access
 
 ![Access](4-access.png)
-
-## Changes
-
-![Changes](5-changes.png)
 
