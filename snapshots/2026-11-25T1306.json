@@ -1,0 +1,276 @@
+{
+ "changeLog": [
+  {
+   "changeType": "Create",
+   "changedBy": "musaxasmammedov83@gmail.com",
+   "clientType": "Azure Portal",
+   "operation": "Microsoft.Storage/storageAccounts/write",
+   "t": "2026-11-25T11:53:17.304Z",
+   "targetId": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.storage/storageaccounts/storage1musa"
+  },
+  {
+   "changeType": "Create",
+   "changedBy": "musaxasmammedov83@gmail.com",
+   "clientType": "Azure Portal",
+   "operation": "Microsoft.Network/networkSecurityGroups/write",
+   "t": "2026-11-25T11:30:02.987Z",
+   "targetId": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.network/networksecuritygroups/number1-network"
+  }
+ ],
+ "containers": [
+  {
+   "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9",
+   "location": "",
+   "name": "Azure subscription 1",
+   "resourceGroup": "",
+   "subscriptionId": "b81f58c4-2bb2-42e5-a0ed-221ef09554f9",
+   "type": "microsoft.resources/subscriptions"
+  },
+  {
+   "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain",
+   "location": "eastus",
+   "name": "tritinain",
+   "resourceGroup": "tritinain",
+   "subscriptionId": "b81f58c4-2bb2-42e5-a0ed-221ef09554f9",
+   "type": "microsoft.resources/subscriptions/resourcegroups"
+  }
+ ],
+ "dcrAssociations": [],
+ "resources": [
+  {
+   "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.network/networksecuritygroups/number1-network",
+   "identity": null,
+   "kind": "",
+   "location": "eastus",
+   "name": "number1-network",
+   "properties": {
+    "defaultSecurityRules": [
+     {
+      "etag": "W/\"4c3a1fbd-6ee7-4364-a331-72b490a762f6\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/number1-network/defaultSecurityRules/AllowVnetInBound",
+      "name": "AllowVnetInBound",
+      "properties": {
+       "access": "Allow",
+       "description": "Allow inbound traffic from all VMs in VNET",
+       "destinationAddressPrefix": "VirtualNetwork",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Inbound",
+       "priority": 65000,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "VirtualNetwork",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"4c3a1fbd-6ee7-4364-a331-72b490a762f6\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/number1-network/defaultSecurityRules/AllowAzureLoadBalancerInBound",
+      "name": "AllowAzureLoadBalancerInBound",
+      "properties": {
+       "access": "Allow",
+       "description": "Allow inbound traffic from azure load balancer",
+       "destinationAddressPrefix": "*",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Inbound",
+       "priority": 65001,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "AzureLoadBalancer",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"4c3a1fbd-6ee7-4364-a331-72b490a762f6\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/number1-network/defaultSecurityRules/DenyAllInBound",
+      "name": "DenyAllInBound",
+      "properties": {
+       "access": "Deny",
+       "description": "Deny all inbound traffic",
+       "destinationAddressPrefix": "*",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Inbound",
+       "priority": 65500,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "*",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"4c3a1fbd-6ee7-4364-a331-72b490a762f6\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/number1-network/defaultSecurityRules/AllowVnetOutBound",
+      "name": "AllowVnetOutBound",
+      "properties": {
+       "access": "Allow",
+       "description": "Allow outbound traffic from all VMs to all VMs in VNET",
+       "destinationAddressPrefix": "VirtualNetwork",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Outbound",
+       "priority": 65000,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "VirtualNetwork",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"4c3a1fbd-6ee7-4364-a331-72b490a762f6\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/number1-network/defaultSecurityRules/AllowInternetOutBound",
+      "name": "AllowInternetOutBound",
+      "properties": {
+       "access": "Allow",
+       "description": "Allow outbound traffic from all VMs to Internet",
+       "destinationAddressPrefix": "Internet",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Outbound",
+       "priority": 65001,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "*",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"4c3a1fbd-6ee7-4364-a331-72b490a762f6\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/number1-network/defaultSecurityRules/DenyAllOutBound",
+      "name": "DenyAllOutBound",
+      "properties": {
+       "access": "Deny",
+       "description": "Deny all outbound traffic",
+       "destinationAddressPrefix": "*",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Outbound",
+       "priority": 65500,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "*",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     }
+    ],
+    "provisioningState": "Succeeded",
+    "resourceGuid": "6a3a2dc4-913d-4db5-bdbb-249d0122bae9",
+    "securityRules": []
+   },
+   "resourceGroup": "tritinain",
+   "sku": null,
+   "subscriptionId": "b81f58c4-2bb2-42e5-a0ed-221ef09554f9",
+   "tags": {},
+   "type": "microsoft.network/networksecuritygroups"
+  },
+  {
+   "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.storage/storageaccounts/storage1musa",
+   "identity": null,
+   "kind": "FileStorage",
+   "location": "eastus",
+   "name": "storage1musa",
+   "properties": {
+    "allowBlobPublicAccess": false,
+    "allowCrossTenantDelegationSas": false,
+    "allowCrossTenantReplication": false,
+    "allowSharedKeyAccess": "<redacted:b5bea41b>",
+    "creationTime": "2026-11-25T11:42:57.645Z",
+    "defaultToOAuthAuthentication": false,
+    "dnsEndpointType": "Standard",
+    "dualStackEndpointPreference": {
+     "publishIpv6Endpoint": false
+    },
+    "encryption": {
+     "keySource": "Microsoft.Storage",
+     "requireInfrastructureEncryption": false,
+     "services": {
+      "blob": {
+       "enabled": true,
+       "keyType": "Account",
+       "lastEnabledTime": "2026-11-25T11:42:58.047Z"
+      },
+      "file": {
+       "enabled": true,
+       "keyType": "Account",
+       "lastEnabledTime": "2026-11-25T11:42:58.047Z"
+      }
+     }
+    },
+    "keyCreationTime": {
+     "key1": "2026-11-25T11:42:58.037Z",
+     "key2": "2026-11-25T11:42:58.037Z"
+    },
+    "largeFileSharesState": "Enabled",
+    "minimumTlsVersion": "TLS1_2",
+    "networkAcls": {
+     "bypass": "AzureServices",
+     "defaultAction": "Allow",
+     "ipRules": [],
+     "ipv6Rules": [],
+     "virtualNetworkRules": []
+    },
+    "primaryEndpoints": {
+     "file": "https://storage1musa.file.core.windows.net/"
+    },
+    "primaryLocation": "eastus",
+    "privateEndpointConnections": [],
+    "provisioningState": "Succeeded",
+    "publicNetworkAccess": "Enabled",
+    "secondaryLocation": "westus",
+    "statusOfPrimary": "available",
+    "statusOfSecondary": "available",
+    "supportsHttpsTrafficOnly": true
+   },
+   "resourceGroup": "tritinain",
+   "sku": {
+    "name": "StandardV2_GRS",
+    "tier": "Standard"
+   },
+   "subscriptionId": "b81f58c4-2bb2-42e5-a0ed-221ef09554f9",
+   "tags": {},
+   "type": "microsoft.storage/storageaccounts"
+  }
+ ],
+ "roles": [
+  {
+   "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/providers/microsoft.authorization/roleassignments/19aca38a-cd20-4301-8cd9-d29f2fdd71c2",
+   "principalId": "d10c1d23-da71-414c-9fc2-16e139016e1c",
+   "principalType": "User",
+   "roleName": "Owner",
+   "scope": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9"
+  },
+  {
+   "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/providers/microsoft.authorization/roleassignments/1bcdd763-1ce6-48b1-b7d3-7256506c2166",
+   "principalId": "5a0e9ca9-321d-4f8c-a41f-53daa52e8d02",
+   "principalType": "ServicePrincipal",
+   "roleName": "Reader",
+   "scope": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9"
+  }
+ ],
+ "taken": "2026-11-25T13:06:39+00:00"
+}
