@@ -5,6 +5,14 @@
    "changedBy": "musaxasmammedov83@gmail.com",
    "clientType": "Azure Portal",
    "operation": "Microsoft.Network/networkSecurityGroups/write",
+   "t": "2026-11-25T13:26:45.697Z",
+   "targetId": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.network/networksecuritygroups/ecrv2"
+  },
+  {
+   "changeType": "Create",
+   "changedBy": "musaxasmammedov83@gmail.com",
+   "clientType": "Azure Portal",
+   "operation": "Microsoft.Network/networkSecurityGroups/write",
    "t": "2026-11-25T13:18:05.326Z",
    "targetId": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.network/networksecuritygroups/fkjwnfjq"
   },
@@ -45,6 +53,157 @@
  ],
  "dcrAssociations": [],
  "resources": [
+  {
+   "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.network/networksecuritygroups/ecrv2",
+   "identity": null,
+   "kind": "",
+   "location": "eastus",
+   "name": "ecrv2",
+   "properties": {
+    "defaultSecurityRules": [
+     {
+      "etag": "W/\"5108ca98-b8e4-4503-94d4-8dfde3f59d06\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/ecrv2/defaultSecurityRules/AllowVnetInBound",
+      "name": "AllowVnetInBound",
+      "properties": {
+       "access": "Allow",
+       "description": "Allow inbound traffic from all VMs in VNET",
+       "destinationAddressPrefix": "VirtualNetwork",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Inbound",
+       "priority": 65000,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "VirtualNetwork",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"5108ca98-b8e4-4503-94d4-8dfde3f59d06\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/ecrv2/defaultSecurityRules/AllowAzureLoadBalancerInBound",
+      "name": "AllowAzureLoadBalancerInBound",
+      "properties": {
+       "access": "Allow",
+       "description": "Allow inbound traffic from azure load balancer",
+       "destinationAddressPrefix": "*",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Inbound",
+       "priority": 65001,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "AzureLoadBalancer",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"5108ca98-b8e4-4503-94d4-8dfde3f59d06\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/ecrv2/defaultSecurityRules/DenyAllInBound",
+      "name": "DenyAllInBound",
+      "properties": {
+       "access": "Deny",
+       "description": "Deny all inbound traffic",
+       "destinationAddressPrefix": "*",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Inbound",
+       "priority": 65500,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "*",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"5108ca98-b8e4-4503-94d4-8dfde3f59d06\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/ecrv2/defaultSecurityRules/AllowVnetOutBound",
+      "name": "AllowVnetOutBound",
+      "properties": {
+       "access": "Allow",
+       "description": "Allow outbound traffic from all VMs to all VMs in VNET",
+       "destinationAddressPrefix": "VirtualNetwork",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Outbound",
+       "priority": 65000,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "VirtualNetwork",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"5108ca98-b8e4-4503-94d4-8dfde3f59d06\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/ecrv2/defaultSecurityRules/AllowInternetOutBound",
+      "name": "AllowInternetOutBound",
+      "properties": {
+       "access": "Allow",
+       "description": "Allow outbound traffic from all VMs to Internet",
+       "destinationAddressPrefix": "Internet",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Outbound",
+       "priority": 65001,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "*",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     },
+     {
+      "etag": "W/\"5108ca98-b8e4-4503-94d4-8dfde3f59d06\"",
+      "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourceGroups/tritinain/providers/Microsoft.Network/networkSecurityGroups/ecrv2/defaultSecurityRules/DenyAllOutBound",
+      "name": "DenyAllOutBound",
+      "properties": {
+       "access": "Deny",
+       "description": "Deny all outbound traffic",
+       "destinationAddressPrefix": "*",
+       "destinationAddressPrefixes": [],
+       "destinationPortRange": "*",
+       "destinationPortRanges": [],
+       "direction": "Outbound",
+       "priority": 65500,
+       "protocol": "*",
+       "provisioningState": "Succeeded",
+       "sourceAddressPrefix": "*",
+       "sourceAddressPrefixes": [],
+       "sourcePortRange": "*",
+       "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/defaultSecurityRules"
+     }
+    ],
+    "provisioningState": "Succeeded",
+    "resourceGuid": "9cbe7c56-3634-4953-9341-7a680855a593",
+    "securityRules": []
+   },
+   "resourceGroup": "tritinain",
+   "sku": null,
+   "subscriptionId": "b81f58c4-2bb2-42e5-a0ed-221ef09554f9",
+   "tags": {},
+   "type": "microsoft.network/networksecuritygroups"
+  },
   {
    "id": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.network/networksecuritygroups/fkjwnfjq",
    "identity": null,
@@ -431,5 +590,5 @@
    "scope": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9"
   }
  ],
- "taken": "2026-11-25T13:21:37+00:00"
+ "taken": "2026-11-25T13:28:15+00:00"
 }
