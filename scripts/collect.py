@@ -134,8 +134,11 @@ def main():
     for key in ("resources", "containers", "roles", "dcrAssociations"):
         snap[key].sort(key=lambda x: x["id"])
 
-    out = ROOT / "snapshots" / (snap["taken"][:16].replace(":", "") + ".json")
+    day = snap["taken"][:10]
+    out = ROOT / "snapshots" / f"{day}.json"
     out.parent.mkdir(exist_ok=True)
+    for old in out.parent.glob(f"{day}*.json"):  # one snapshot per day: a re-run replaces today's
+        old.unlink()
     out.write_text(json.dumps(snap, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
     print(f"saved {out.relative_to(ROOT)}")
 
