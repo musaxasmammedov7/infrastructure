@@ -17,6 +17,7 @@ NOISE = {
     "createdat", "createdby", "createdbytype", "timecreated", "resourceguid",
 }
 MAX_FIELDS = 6
+RISKY_ROLES = {"owner", "contributor", "user access administrator", "role based access control administrator"}
 
 
 def items(snap):
@@ -27,8 +28,9 @@ def items(snap):
     for c in snap.get("containers", []):
         out[c["id"]] = {"kind": "container", **c}
     for a in snap.get("roles", []):
-        out[a["id"]] = {"kind": "role", "name": f'{a.get("roleName")} -> {a.get("principalType")} {a.get("principalId", "")[:8]}',
-                        "type": "role assignment", **a}
+        scope = a.get("scope", "").rstrip("/").rsplit("/", 1)[-1]
+        out[a["id"]] = {"kind": "role", "type": "role assignment", **a,
+                        "name": f'{a.get("roleName")}: {a.get("principalType")} {a.get("principalId", "")[:8]} → {scope}'}
     return out
 
 
@@ -85,7 +87,8 @@ def report_section(out):
         lines += [f"### {title} ({len(out[kind])})", ""]
         for x in out[kind]:
             where = f" · RG `{x['resourceGroup']}`" if x.get("resourceGroup") else ""
-            lines.append(f"- **{x.get('name')}** ({(x.get('type') or '').split('/')[-1]}){where}"
+            warn = "⚠ " if x.get("kind") == "role" and str(x.get("name", "")).split(":")[0].lower() in RISKY_ROLES else ""
+            lines.append(f"- {warn}**{x.get('name')}** ({(x.get('type') or '').split('/')[-1]}){where}"
                          f" · by {x.get('by') or 'unknown'}")
             for f in x.get("fields", []):
                 lines.append(f"  - `{f}`")
