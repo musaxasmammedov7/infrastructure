@@ -134,7 +134,7 @@ def main():
     for key in ("resources", "containers", "roles", "dcrAssociations"):
         snap[key].sort(key=lambda x: x["id"])
 
-    out = ROOT / "snapshots" / (snap["taken"][:10] + ".json")
+    out = ROOT / "snapshots" / (snap["taken"][:16].replace(":", "") + ".json")
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps(snap, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
     print(f"saved {out.relative_to(ROOT)}")
