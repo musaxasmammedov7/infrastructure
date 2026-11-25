@@ -796,6 +796,8 @@ def network_page(m, date):
                 if pe_in[sid]:
                     lines.append(f"{pe_in[sid]} private endpoints")
                 vbox.add(card(sid, "<br>".join(lines), "Network", "risk" if risk else None, w=190))
+    if not grid.children:
+        grid.add(card("net:none", "<i>No virtual networks in the snapshot</i>", "Other", w=300))
     return page
 
 
@@ -853,6 +855,9 @@ def monitoring_page(m, date):
                 page.edge(ag["id"], t, E_FLOW)
     if not recv.children:
         page.root.children.remove(recv)
+    if not grid.children:
+        grid.add(card("mon:none", "<i>No Log Analytics, Prometheus, data collection rules,<br>alert rules or action groups</i>",
+                      "Other", w=360))
     return page
 
 
