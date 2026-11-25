@@ -2,15 +2,19 @@
 
 What changed: [changes/2026-11-25.md](../changes/2026-11-25.md)
 
-## Infra Azure subscription 1
+## Overview
 
-![Infra Azure subscription 1](2-infra-azure-subscription-1.png)
+![Overview](1-overview.png)
+
+## Network
+
+![Network](2-network.png)
+
+## Environment Azure subscription 1
+
+![Environment Azure subscription 1](3-env-azure-subscription-1.png)
 
 ## Monitoring
 
-![Monitoring](3-monitoring.png)
-
-## Access
-
-![Access](4-access.png)
+![Monitoring](4-monitoring.png)
 

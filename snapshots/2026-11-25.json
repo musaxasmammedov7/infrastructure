@@ -5,7 +5,7 @@
    "changedBy": "musaxasmammedov83@gmail.com",
    "clientType": "Azure Portal",
    "operation": "Microsoft.Storage/storageAccounts/write",
-   "t": "2026-11-25T13:40:39.332Z",
+   "t": "2026-11-25T13:50:35.362Z",
    "targetId": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9/resourcegroups/tritinain/providers/microsoft.storage/storageaccounts/uffgdfhjy"
   },
   {
@@ -660,5 +660,5 @@
    "scope": "/subscriptions/b81f58c4-2bb2-42e5-a0ed-221ef09554f9"
   }
  ],
- "taken": "2026-11-25T13:46:11+00:00"
+ "taken": "2026-11-25T14:20:29+00:00"
 }
