@@ -12,7 +12,7 @@ What changed: [changes/2026-11-25.md](../changes/2026-11-25.md)
 
 ## Other subscriptions
 
-![Other subscriptions](other-subscriptions.png)
+![Other subscriptions](subscriptions/other.png)
 
 ## Monitoring
 
