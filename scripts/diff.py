@@ -71,7 +71,7 @@ def who(change_log, rid):
 
 
 def brief(it):
-    return {k: it.get(k) for k in ("id", "kind", "name", "type", "resourceGroup", "subscriptionId")}
+    return {k: it.get(k) for k in ("id", "kind", "name", "type", "resourceGroup", "subscriptionId", "env")}
 
 
 def report_section(out):
@@ -85,8 +85,9 @@ def report_section(out):
         if not out[kind]:
             continue
         lines += [f"### {title} ({len(out[kind])})", ""]
-        for x in out[kind]:
+        for x in sorted(out[kind], key=lambda x: (x.get("env") or "", x.get("name") or "")):
             where = f" · RG `{x['resourceGroup']}`" if x.get("resourceGroup") else ""
+            where = f" · **{x['env']}**{where}" if x.get("env") else where
             warn = "⚠ " if x.get("kind") == "role" and str(x.get("name", "")).split(":")[0].lower() in RISKY_ROLES else ""
             lines.append(f"- {warn}**{x.get('name')}** ({(x.get('type') or '').split('/')[-1]}){where}"
                          f" · by {x.get('by') or 'unknown'}")
@@ -129,6 +130,11 @@ def main():
 
     if old:
         a, b = items(old), items(new)
+        names = {c["subscriptionId"]: c["name"] for snap in (old, new) for c in snap.get("containers", [])
+                 if c.get("type") == "microsoft.resources/subscriptions"}
+        for it in list(a.values()) + list(b.values()):
+            sid = it.get("subscriptionId") or (it.get("scope", "").split("/")[2] if it.get("scope", "").startswith("/subscriptions/") else "")
+            it["env"] = names.get(sid, "")
         log = new.get("changeLog", [])
         for rid in sorted(b.keys() - a.keys()):
             out["added"].append({**brief(b[rid]), "by": who(log, rid)})
