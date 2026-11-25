@@ -1,11 +1,11 @@
-# Which subscriptions are drawn together on one environment page.
+# Environment pages. One line = one diagram (a "/" in the name = sub-folder in diagrams/).
 #   merge:        same structure -> ONE template page, names use <env>, "only in" marks differences
-#   side_by_side: different structure -> shown next to each other on one page
-# Subscriptions not listed here go to the page "Other subscriptions".
+#   side_by_side: subscriptions drawn next to each other as they are
+# Subscriptions not listed here are drawn on "other-subscriptions".
 pages:
-  - name: Environments
-    merge: [Development, QA, Staging, Demo]
-  - name: GCP-connected
-    side_by_side: [Integration, Production]
-  - name: Shared
+  - name: environments/non-prod
+    merge: [Development, QA, Staging, Demo, Integration]
+  - name: environments/prod
+    side_by_side: [Production]
+  - name: shared
     side_by_side: [Shared]
