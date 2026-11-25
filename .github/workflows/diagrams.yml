@@ -72,16 +72,13 @@ jobs:
             xvfb-run -a drawio -x -f png --scale 1.5 -b 10 -o "$png" "$f" --no-sandbox --disable-gpu 2>&1 | grep -v bus.cc || true
             test -s "$png" || { echo "::error::export failed for $f"; exit 1; }
           done
-          # explainer diagram in docs/ (source .drawio is committed, PNG is exported)
-          xvfb-run -a drawio -x -f png --scale 1.5 -b 10 -o "$GITHUB_WORKSPACE/docs/how-it-works.png" \
-            "$GITHUB_WORKSPACE/docs/how-it-works.drawio" --no-sandbox --disable-gpu 2>&1 | grep -v bus.cc || true
-          ls -la diagrams docs
+          ls -la diagrams
 
       - name: Commit results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add snapshots changes diagrams docs
+          git add -A snapshots changes diagrams
           if git diff --cached --quiet; then
             echo "Nothing to commit"
           else
