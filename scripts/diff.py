@@ -71,6 +71,29 @@ def brief(it):
     return {k: it.get(k) for k in ("id", "kind", "name", "type", "resourceGroup", "subscriptionId")}
 
 
+def report(out):
+    """Human-readable version of the change file."""
+    if not out["from"]:
+        return f"# Changes {out['to']}\n\nFirst snapshot — baseline, nothing to compare yet.\n"
+    lines = [f"# Changes {out['from']} → {out['to']}", ""]
+    if not (out["added"] or out["changed"] or out["removed"]):
+        lines.append("No changes.")
+    for kind, title in (("added", "Added"), ("changed", "Changed"), ("removed", "Removed")):
+        if not out[kind]:
+            continue
+        lines += [f"## {title} ({len(out[kind])})", ""]
+        for x in out[kind]:
+            where = f" · RG `{x['resourceGroup']}`" if x.get("resourceGroup") else ""
+            lines.append(f"- **{x.get('name')}** ({(x.get('type') or '').split('/')[-1]}){where}"
+                         f" · by {x.get('by') or 'unknown'}")
+            for f in x.get("fields", []):
+                lines.append(f"  - `{f}`")
+            if x.get("moreFields"):
+                lines.append(f"  - … +{x['moreFields']} more")
+        lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def main():
     snaps = sorted((ROOT / "snapshots").glob("*.json"))
     if not snaps:
@@ -98,6 +121,7 @@ def main():
     dst = ROOT / "changes" / f"{new_p.stem}.json"
     dst.parent.mkdir(exist_ok=True)
     dst.write_text(json.dumps(out, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
+    dst.with_suffix(".md").write_text(report(out))
     print(f'added {len(out["added"])}, changed {len(out["changed"])}, removed {len(out["removed"])}'
           f' (since {out["from"] or "-"})')
 
