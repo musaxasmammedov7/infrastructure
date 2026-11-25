@@ -49,8 +49,23 @@ jobs:
       - name: Diff with previous snapshot
         run: python3 scripts/diff.py
 
-      - name: Render diagrams
+      - name: Render diagrams (.drawio)
         run: python3 scripts/render.py >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install draw.io desktop (for export)
+        run: |
+          curl -sSfL -o /tmp/drawio.deb \
+            https://github.com/jgraph/drawio-desktop/releases/download/v24.7.17/drawio-amd64-24.7.17.deb
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb /tmp/drawio.deb
+
+      - name: Export PNG + SVG
+        run: |
+          for f in diagrams/*.drawio; do
+            xvfb-run -a drawio --no-sandbox --disable-gpu -x -f png --scale 1.5 -b 10 -o "${f%.drawio}.png" "$f"
+            xvfb-run -a drawio --no-sandbox --disable-gpu -x -f svg --embed-diagram -b 10 -o "${f%.drawio}.svg" "$f"
+          done
+          ls -la diagrams
 
       - name: Commit results
         run: |
