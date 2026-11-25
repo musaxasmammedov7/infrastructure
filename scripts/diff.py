@@ -140,9 +140,8 @@ def main():
     day = new_p.stem
     folder = ROOT / "changes"
     folder.mkdir(exist_ok=True)
-    for f in folder.glob(f"{day}T*"):  # leftovers with a time in the name
+    for f in list(folder.glob(f"{day}T*")) + list(folder.glob("*.json")):  # old leftovers; only .md is kept
         f.unlink()
-    (folder / f"{day}.json").write_text(json.dumps(out, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
     # .md keeps every run of the day, newest first
     md = folder / f"{day}.md"
     earlier = md.read_text().split("\n", 1)[1].lstrip("\n") if md.exists() else ""
