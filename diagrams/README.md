@@ -1,6 +1,6 @@
-# Azure diagrams — 2026-11-25
+# Azure diagrams — 2026-11-25T1300
 
-Changes: first snapshot (baseline) — details: [changes/2026-11-25.md](../changes/2026-11-25.md)
+Changes: 0 added, 0 changed, 0 removed since 2026-11-25 — details: [changes/2026-11-25T1300.md](../changes/2026-11-25T1300.md)
 
 ## Infra Azure subscription 1
 
