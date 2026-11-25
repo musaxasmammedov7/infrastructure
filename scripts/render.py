@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Newest snapshot + its change file -> draw.io diagrams.
 
-One .drawio file per diagram in diagrams/ (the workflow exports each to PNG + SVG):
+One .drawio file per diagram in build/; the workflow exports each to diagrams/<name>.png:
   1-overview.drawio           only when there is more than one subscription
   2-infra-<subscription>.drawio  VNets -> subnets -> resources, services, Internet exposure
   3-monitoring.drawio         data collection and alert routing
@@ -20,7 +20,8 @@ import sys
 from xml.sax.saxutils import escape
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / "diagrams"
+OUT = ROOT / "diagrams"   # committed: PNG + README
+BUILD = ROOT / "build"    # not committed: .drawio sources for the PNG export
 
 # ------------------------------------------------------------------ styles
 CAT_COLORS = {
@@ -861,17 +862,17 @@ def main():
     pages.append(("5-changes", changes_page(m, date)))
 
     OUT.mkdir(exist_ok=True)
-    for old in list(OUT.glob("*.drawio")) + list(OUT.glob("*.png")) + list(OUT.glob("*.svg")) + list(OUT.glob("*.md")):
+    BUILD.mkdir(exist_ok=True)
+    for old in [p for d in (OUT, BUILD) for p in d.iterdir() if p.is_file()]:
         old.unlink()
     preview = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else None
     index = [f"# Azure diagrams — {date}", "", f"Changes: {summary} — details: [changes/{date}.md](../changes/{date}.md)", ""]
     for fname, page in pages:
-        (OUT / f"{fname}.drawio").write_text(page.build())
+        (BUILD / f"{fname}.drawio").write_text(page.build())
         if preview:
             preview.mkdir(parents=True, exist_ok=True)
             (preview / f"{fname}.svg").write_text(page.preview_svg())
-        index += [f"## {page.name}", "", f"![{page.name}]({fname}.png)", "",
-                  f"Edit: [{fname}.drawio]({fname}.drawio) · vector: [{fname}.svg]({fname}.svg)", ""]
+        index += [f"## {page.name}", "", f"![{page.name}]({fname}.png)", ""]
     (OUT / "README.md").write_text("\n".join(index) + "\n")
     print(f"## Azure diagrams {date}\n\n{summary}\n")
     for kind in ("added", "changed", "removed"):
