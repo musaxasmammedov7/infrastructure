@@ -1,0 +1,11 @@
+# Which subscriptions are drawn together on one environment page.
+#   merge:        same structure -> ONE template page, names use <env>, "only in" marks differences
+#   side_by_side: different structure -> shown next to each other on one page
+# Subscriptions not listed here go to the page "Other subscriptions".
+pages:
+  - name: Environments
+    merge: [Development, QA, Staging, Demo]
+  - name: GCP-connected
+    side_by_side: [Integration, Production]
+  - name: Shared
+    side_by_side: [Shared]
