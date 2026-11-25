@@ -2,6 +2,8 @@
 
 Weekly, automatic, read-only.
 
+![How it works](docs/how-it-works.png)
+
 1. GitHub Actions logs in to Azure with OIDC (no stored password) as an identity with the `Reader` role.
 2. `scripts/collect.py` queries Azure Resource Graph and saves `snapshots/<date>.json`
    (webhook URLs, e-mails, keys and Logic App definitions are replaced by a hash).
