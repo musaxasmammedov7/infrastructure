@@ -10,7 +10,8 @@ Weekly, automatic, read-only.
 3. `scripts/diff.py` compares it with the previous run and writes `changes/<date>.md`:
    added / changed (old → new) / removed, and who did it (Azure change history, last 8 days).
 4. `scripts/render.py` builds draw.io diagrams in [`diagrams/`](diagrams/README.md)
-   (one infra page per subscription, monitoring, access); draw.io exports them to PNG.
+   (overview, network, one page per environment — similar environments share one page — and monitoring);
+   draw.io exports them to PNG.
 5. The workflow commits the results. Runs every Monday 06:00 UTC, or manually:
    Actions → azure-diagrams → Run workflow.
 
