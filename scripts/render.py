@@ -952,29 +952,39 @@ def load_config(path):
     return pages
 
 
-def vpn_block(m, members):
-    """External networks reached by VPN from these subscriptions (one card per tunnel)."""
-    box = cont("vpn:" + "-".join(members), "<b>External networks (VPN)</b>", "ext", "grid", cols=2)
-    for c in m.of_type("microsoft.network/connections"):
-        if c["subscriptionId"] not in members:
-            continue
+def vpn_block(m, members, where=None):
+    """External networks reached by VPN from these subscriptions (one card per tunnel).
+    Tunnels of other subscriptions into the SAME external address space are shown too,
+    so e.g. Integration and Production both appear next to the shared GCP network."""
+    def remote(c):
+        lng = m.owner((P(c).get("localNetworkGateway2") or {}).get("id"))
+        return lng, tuple((P(m.res[lng]).get("localNetworkAddressSpace") or {}).get("addressPrefixes", [])) if lng else ()
+    conns = m.of_type("microsoft.network/connections")
+    mine_nets = {remote(c)[1] for c in conns if c["subscriptionId"] in members} - {()}
+    shown = [c for c in conns if c["subscriptionId"] in members or remote(c)[1] in mine_nets]
+    nets = ", ".join(sorted({", ".join(n) for n in mine_nets}))
+    box = cont("vpn:" + "-".join(members), f"<b>External network via VPN</b> · {h(nets)}", "ext", "grid", cols=2)
+    for c in sorted(shown, key=lambda c: (c["subscriptionId"] not in members, m.subs[c["subscriptionId"]], c["name"])):
         p = P(c)
-        lng = m.owner((p.get("localNetworkGateway2") or {}).get("id"))
+        lng = remote(c)[0]
         lp = P(m.res[lng]) if lng else {}
         status = p.get("connectionStatus", "")
+        other = c["subscriptionId"] not in members
+        note = f"<br><i>(see {h(where.get(c['subscriptionId'], m.subs[c['subscriptionId']]))})</i>" if other and where else ""
         label = (f"<b>{h(m.subs[c['subscriptionId']])} ⇄ {h(m.res[lng]['name'] if lng else '?')}</b><br>"
                  f"{h(p.get('connectionType', ''))} · peer {h(lp.get('gatewayIpAddress', ''))} · "
                  f"{h(', '.join((lp.get('localNetworkAddressSpace') or {}).get('addressPrefixes', [])))}<br>"
-                 + (h(status) if status == "Connected" else f"<font color='#CF222E'>⚠ {h(status or 'unknown')}</font>"))
-        box.add(card("vpn:" + c["id"], label, "External", w=330))
+                 + (h(status) if status == "Connected" else f"<font color='#CF222E'>⚠ {h(status or 'unknown')}</font>")
+                 + note)
+        box.add(card("vpn:" + c["id"], label, "Other" if other else "External", w=330))
     return box if box.children else None
 
 
-def side_by_side_page(m, name, members, date, summary, cols=None):
+def side_by_side_page(m, name, members, date, summary, cols=None, where=None):
     page = Page(name, f"<b style='font-size:20px'>{h(name)}</b><br>Snapshot {date} · "
                       + " · ".join(h(m.subs[s]) for s in members) + "<br>"
                       "<font color='#CF222E'>■ red border = open to the Internet</font>")
-    vb = vpn_block(m, members)
+    vb = vpn_block(m, members, where)
     if vb:
         page.root.add(vb)
     row = page.root.add(cont("sbs:" + name, "", "plain", "grid", cols=cols or len(members)))
@@ -985,36 +995,41 @@ def side_by_side_page(m, name, members, date, summary, cols=None):
     return page
 
 
-def merged_page(m, members, date, summary):
+def merged_page(m, members, date, summary, where=None):
     tokens = {s: env_tokens([r for r in m.res.values() if r["subscriptionId"] == s and not r["type"].startswith(HIDE)
                              and not r["resourceGroup"].startswith("mc_")], m.subs[s]) for s in members}
     gm, gid, title = group_model(m, members, tokens)
     page = infra_page(gm, gid, title, date, summary)
     page.root.children[0].label = page.root.children[0].label.replace(
         "Snapshot", "Same structure — names use &lt;env&gt;; “only in” = not in every environment<br>Snapshot", 1)
+    vb = vpn_block(m, members, where)
+    if vb:
+        page.root.children.insert(1, vb)
     return page
 
 
 def config_pages(m, cfg, date, summary):
     by_name = {n.lower(): s for s, n in m.subs.items()}
     present = {r["subscriptionId"] for r in m.res.values()}
-    used, pages = set(), []
+    plan, where = [], {}
     for pc in cfg:
         members = [by_name[x.lower()] for x in pc["subs"] if x.lower() in by_name and by_name[x.lower()] in present]
-        if not members:
-            continue
-        used.update(members)
-        fname = f"3-env-{slug(pc['name'])}"
+        if members:
+            fname = "/".join(slug(part) for part in pc["name"].split("/"))
+            plan.append((pc, members, fname))
+            where.update({s: fname for s in members})
+    rest = sorted((s for s in present if s not in where), key=lambda s: m.subs[s])
+    where.update({s: "other-subscriptions" for s in rest})
+    pages = []
+    for pc, members, fname in plan:
+        title = pc["name"].split("/")[-1]
         if pc["mode"] == "merge" and len(members) > 1:
-            pages.append((fname, merged_page(m, members, date, summary)))
-        elif len(members) == 1:
-            pages.append((fname, infra_page(m, members[0], m.subs[members[0]], date, summary)))
+            pages.append((fname, merged_page(m, members, date, summary, where)))
         else:
-            pages.append((fname, side_by_side_page(m, pc["name"], members, date, summary)))
-    rest = sorted((s for s in present if s not in used), key=lambda s: m.subs[s])
+            pages.append((fname, side_by_side_page(m, title, members, date, summary, where=where)))
     if rest:
-        pages.append(("3-env-other-subscriptions",
-                      side_by_side_page(m, "Other subscriptions", rest, date, summary, cols=2)))
+        pages.append(("other-subscriptions",
+                      side_by_side_page(m, "Other subscriptions", rest, date, summary, cols=2, where=where)))
     return pages
 
 
@@ -1066,19 +1081,21 @@ def main():
                 box = grid.add(cont("small:" + s, f"<b>{h(m.subs[s])}</b>", "sub", "v"))
                 box.children = one.root.children[1:]
             pages.append(("3-env-small-subscriptions", combo))
-    pages.append(("4-monitoring", monitoring_page(m, date)))
+    pages.append(("monitoring", monitoring_page(m, date)))
 
     OUT.mkdir(exist_ok=True)
     BUILD.mkdir(exist_ok=True)
-    for old in [p for d in (OUT, BUILD) for p in d.iterdir() if p.is_file()]:
-        old.unlink()
+    for d in (OUT, BUILD):
+        for old in sorted(d.rglob("*"), reverse=True):
+            old.unlink() if old.is_file() else old.rmdir()
     preview = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else None
     index = [f"# Azure diagrams — {date}", "", f"What changed: [changes/{date}.md](../changes/{date}.md)", ""]
     for fname, page in pages:
+        (BUILD / f"{fname}.drawio").parent.mkdir(parents=True, exist_ok=True)
         (BUILD / f"{fname}.drawio").write_text(page.build())
         if preview:
             preview.mkdir(parents=True, exist_ok=True)
-            (preview / f"{fname}.svg").write_text(page.preview_svg())
+            (preview / f"{fname.replace('/', '__')}.svg").write_text(page.preview_svg())
         index += [f"## {page.name}", "", f"![{page.name}]({fname}.png)", ""]
     (OUT / "README.md").write_text("\n".join(index) + "\n")
     print(f"## Azure diagrams {date}\n\n" + "\n".join(f"- {n}.png" for n, _ in pages))
