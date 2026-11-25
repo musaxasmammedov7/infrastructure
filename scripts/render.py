@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Newest snapshot + its change file -> draw.io diagrams.
+"""Newest snapshot -> draw.io diagrams (current state only; changes are in changes/<date>.md).
 
-One .drawio file per diagram in build/; the workflow exports each to diagrams/<name>.png:
-  1-overview.drawio           only when there is more than one subscription
-  2-infra-<subscription>.drawio  VNets -> subnets -> resources, services, Internet exposure
-  3-monitoring.drawio         data collection and alert routing
-  4-access.drawio             who has which role where
-Diagrams show the current state only (changes are in changes/<date>.md). Red border = open to the Internet.
-Optional 2nd argument: write an approximate SVG preview of every page into that folder.
+One .drawio per diagram in build/; the workflow exports each to diagrams/<name>.png:
+  1-overview.png          all subscriptions, what is inside, peering between them
+  2-network.png           every VNet / subnet / NSG open rule / peering / VPN, all subscriptions
+  3-env-<subscription>.png  resources per subnet + services outside VNets (no lines)
+  4-monitoring.png        per subscription: stores, rules, alert counts, action groups -> receivers
+Red border = open to the Internet.
+Optional argument: folder for a rough local SVG preview of every page.
 """
 import collections
 import hashlib
@@ -402,11 +402,10 @@ def receivers(ag):
 
 # ------------------------------------------------------------------ infra page (per subscription)
 def infra_page(m, sub_id, sub_name, date, summary):
-    page = Page(f"Infra {sub_name}",
+    page = Page(f"Environment {sub_name}",
                 f"<b style='font-size:20px'>Azure infrastructure — {h(sub_name)}</b><br>"
                 f"Snapshot {date}<br>"
-                "<font color='#CF222E'>■ red border = open to the Internet</font>  "
-                "<font color='#2E75B6'>━ VNet peering</font>  <font color='#B85450'>┅ VPN</font>")
+                "<font color='#CF222E'>■ red border = open to the Internet</font>  · network links: see the network diagram")
     res = {rid: r for rid, r in m.res.items() if r["subscriptionId"] == sub_id}
     top = page.root.add(cont(f"top:{sub_id}", "", "plain", "h"))
     body = page.root.add(cont(f"body:{sub_id}", "", "plain", "h"))
@@ -430,7 +429,7 @@ def infra_page(m, sub_id, sub_name, date, summary):
             if pid:
                 pip_of[holder].append(pid)
                 merged.add(pid)
-            if ip.get("privateIPAddress"):
+            if ip.get("privateIPAddress") and not getattr(m, "presence", None):
                 extra[holder].append(f"private {h(ip['privateIPAddress'])}")
         nsg = m.owner((np_.get("networkSecurityGroup") or {}).get("id"))
         if nsg:
@@ -497,7 +496,8 @@ def infra_page(m, sub_id, sub_name, date, summary):
             for key, word in (("natGateway", "NAT"), ("routeTable", "routes")):
                 o = m.owner((sp.get(key) or {}).get("id"))
                 if o:
-                    ips = [P(m.res[x]).get("ipAddress", "") for x in pip_of.get(o, []) if x in m.res]
+                    ips = [] if getattr(m, "presence", None) else \
+                        [P(m.res[x]).get("ipAddress", "") for x in pip_of.get(o, []) if x in m.res]
                     lines.append(f"{word} {h(m.res[o]['name'])}" + (f" (out {h(', '.join(ips))})" if ips else ""))
                     merged.add(o)
             if pe_in[s["id"].lower()]:
@@ -509,6 +509,8 @@ def infra_page(m, sub_id, sub_name, date, summary):
         if v["subscriptionId"] != sub_id:
             continue
         space = ", ".join(P(v).get("addressSpace", {}).get("addressPrefixes", []))
+        if getattr(m, "presence", None):
+            space = "addresses per environment: see network diagram"
         tag = f" {STATUS_TAG[m.st(v['id'])]}" if m.st(v["id"]) else ""
         vbox = vcol.add(cont(v["id"], f"<b>VNet {h(v['name'])}</b> · {h(space)} · RG {h(v['resourceGroup'])}{tag}",
                              "vnet", "grid", cols=2, status=m.st(v["id"])))
@@ -516,6 +518,8 @@ def infra_page(m, sub_id, sub_name, date, summary):
             sid = s["id"].lower()
             sp = s.get("properties", {})
             prefix = sp.get("addressPrefix") or ", ".join(sp.get("addressPrefixes", []))
+            if getattr(m, "presence", None):
+                prefix = ""
             lines, risk = subnet_title.get(sid, ([], False))
             label = "<br>".join([f"<b>{h(s['name'])}</b> · {h(prefix)}"] + lines)
             members = sorted((rid for rid, sn in place.items() if sn == sid and rid in res), key=lambda x: res[x]["name"])
@@ -556,8 +560,8 @@ def infra_page(m, sub_id, sub_name, date, summary):
                        "<b>Alerts &amp; collection</b><br>" + "<br>".join(f"{n} {h(k)}" for k, n in sorted(mon_summary.items())) +
                        "<br><i>details: monitoring diagram</i>", "Monitoring", st))
 
-    # keep only container-to-container links (peering, VPN); exposure is shown on the card itself
-    page.edges = [e for e in page.edges if e[2] in (E_PEER, E_VPN)]
+    # no lines on this page: links between networks are on the network diagram
+    page.edges = []
     # anything an edge points to that is not on this page -> stub in "Outside this subscription"
     present = {b.key for b, _ in page.root.walk()}
     stubs = [t for s, t, _, _ in page.edges if t not in present] + [s for s, t, _, _ in page.edges if s not in present]
@@ -615,6 +619,8 @@ def resource_card(m, page, rid, pip_of, extra):
     lines += [x for x in extra.get(rid, []) if x != "__risk__"]
     for pid in pip_of.get(rid, []):
         ip = P(m.res[pid]).get("ipAddress", "not allocated") if pid in m.res else "?"
+        if getattr(m, "presence", None):
+            ip = "(per environment)"
         lines.append(f"<font color='#8A6D00'>public IP {h(ip)}</font>")
         if t != "microsoft.network/natgateways":
             page.edge("internet", rid, E_WEB, ip)
@@ -664,175 +670,264 @@ def resource_card(m, page, rid, pip_of, extra):
             lines.append("public endpoint · IP filter")
         else:
             lines.append("no public access")
+    pres = getattr(m, "presence", {}).get(rid)
+    partial = bool(pres) and len(pres) < m.group_size
+    oi = getattr(m, "open_in", {}).get(rid)
+    if oi and len(oi) < len(pres or ()):
+        lines.append(f"<font color='#CF222E'>⚠ open in: {h(', '.join(sorted(oi)))}</font>")
+    if partial:
+        lines.append(f"<font color='#8A6D00'>only in: {h(', '.join(sorted(pres)))}</font>")
     c = card(rid, m.label(r, *lines), category(t), status or ("risk" if risk else None))
-    c.flag = bool(status or risk)
+    c.flag = bool(status or risk or partial)
     return c
 
 
-# ------------------------------------------------------------------ overview (only for >1 subscription)
+# ------------------------------------------------------------------ overview
 def overview_page(m, date, summary):
-    page = Page("Overview", f"<b style='font-size:20px'>Azure overview</b><br>Snapshot {date} · changes: {h(summary)}")
-    grid = page.root.add(cont("ov:grid", "", "plain", "grid", cols=3))
+    page = Page("Overview", f"<b style='font-size:20px'>Azure overview</b><br>Snapshot {date} · "
+                            "subscriptions and what is inside them · <font color='#2E75B6'>━ VNet peering</font>")
     cats = collections.defaultdict(collections.Counter)
-    changed = collections.defaultdict(set)
     for r in m.res.values():
-        if r["type"].startswith(HIDE):
-            continue
-        cats[r["subscriptionId"]][category(r["type"])] += 1
-        if m.st(r["id"]):
-            changed[r["subscriptionId"]].add(m.st(r["id"]))
-    for sub_id, name in sorted(m.subs.items(), key=lambda x: x[1]):
-        if not cats[sub_id]:
-            continue
-        box = grid.add(cont("ov:" + sub_id, f"<b>{h(name)}</b>", "sub", "grid", cols=2,
-                            status="changed" if changed[sub_id] else None))
-        for cat, n in sorted(cats[sub_id].items()):
-            box.add(card(f"ov:{sub_id}:{cat}", f"<b>{cat}</b><br>{n} resources", cat, w=130))
+        if not r["type"].startswith(HIDE) and not r["resourceGroup"].startswith("mc_"):
+            cats[r["subscriptionId"]][category(r["type"])] += 1
+    links = set()
     for v in m.of_type("microsoft.network/virtualnetworks"):
         for pe in P(v).get("virtualNetworkPeerings", []):
             remote = m.owner(((pe.get("properties") or {}).get("remoteVirtualNetwork") or {}).get("id"))
             if remote and m.res[remote]["subscriptionId"] != v["subscriptionId"]:
-                a, b = sorted([v["subscriptionId"], m.res[remote]["subscriptionId"]])
-                page.edge("ov:" + a, "ov:" + b, E_PEER, "peering")
+                links.add(tuple(sorted([v["subscriptionId"], m.res[remote]["subscriptionId"]])))
+    degree = collections.Counter(x for l in links for x in l)
+    hub = degree.most_common(1)[0][0] if degree else None
+    spokes = sorted({b if a == hub else a for a, b in links if hub in (a, b)}, key=lambda s: m.subs[s])
+    rest = sorted((s for s in m.subs if cats[s] and s != hub and s not in spokes), key=lambda s: m.subs[s])
+
+    def sub_box(s):
+        box = cont("ov:" + s, f"<b>{h(m.subs[s])}</b>" + (" · hub" if s == hub else ""), "sub", "grid", cols=2)
+        for cat, n in sorted(cats[s].items()):
+            box.add(card(f"ov:{s}:{cat}", f"<b>{cat}</b><br>{n} resources", cat, w=130))
+        return box
+
+    if hub:
+        page.root.add(cont("ov:hubrow", "", "plain", "h")).add(sub_box(hub))
+        row = page.root.add(cont("ov:spokes", "", "plain", "h"))
+        for s in spokes:
+            row.add(sub_box(s))
+        for a, b in links:
+            if hub in (a, b):  # hub bottom -> spoke top keeps the lines between the two rows
+                page.edge("ov:" + hub, "ov:" + (b if a == hub else a),
+                          E_PEER + "exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;")
+    if rest:
+        other = page.root.add(cont("ov:rest", "<b>Not peered with the hub</b>" if hub else "", "group", "grid", cols=4))
+        for s in rest:
+            other.add(sub_box(s))
     return page
 
 
-# ------------------------------------------------------------------ monitoring
-def monitoring_page(m, date):
-    page = Page("Monitoring", f"<b style='font-size:20px'>Monitoring &amp; alerts</b><br>Snapshot {date}. "
-                              "Top: agent data → collection rule → store. Bottom: alert rule → action group → receiver. "
-                              "Diagnostic settings are not visible in Resource Graph.")
-    flow1 = page.root.add(cont("mon:flow1", "", "plain", "h"))
-    flow2 = page.root.add(cont("mon:flow2", "", "plain", "h"))
-    src = flow1.add(cont("mon:src", "<b>Sources (agents)</b>", "group"))
-    dcr = flow1.add(cont("mon:dcr", "<b>Data collection rules</b>", "group"))
-    store = flow1.add(cont("mon:store", "<b>Stores</b>", "group"))
-    alerts = flow2.add(cont("mon:alerts", "<b>Alert rules</b>", "group", "grid", cols=2))
-    ags = flow2.add(cont("mon:ags", "<b>Action groups</b>", "group"))
-    recv = flow2.add(cont("mon:recv", "<b>Receivers (Logic Apps)</b>", "group"))
+# ------------------------------------------------------------------ network (all subscriptions)
+def network_page(m, date):
+    page = Page("Network", "<b style='font-size:20px'>Network</b><br>"
+                f"Snapshot {date} · every VNet, address ranges, subnets, NSG rules open to the Internet, "
+                "peering (↔) and VPN, all subscriptions<br>"
+                "<font color='#CF222E'>■ red border = inbound traffic from the Internet allowed</font>")
+    pe_in = collections.Counter((((P(pe).get("subnet") or {}).get("id")) or "").lower()
+                                for pe in m.of_type("microsoft.network/privateendpoints"))
+    vnets = m.of_type("microsoft.network/virtualnetworks")
 
-    def mcard(rid, *extra):
-        return card(rid, m.label(m.res[rid], *extra), category(m.res[rid]["type"]), m.st(rid))
+    def vname(vid):
+        r = m.res.get(vid)
+        return f"{r['name']} ({m.subs.get(r['subscriptionId'], '')})" if r else vid.rsplit("/", 1)[-1]
 
-    for r in m.of_type("microsoft.operationalinsights/workspaces", "microsoft.monitor/accounts",
-                       "microsoft.insights/components"):
-        p = P(r)
-        cap = (p.get("workspaceCapping") or {}).get("dailyQuotaGb", -1)
-        info = f"{p.get('retentionInDays')} days" if p.get("retentionInDays") else ""
-        info += f" · cap {cap} GB/day" if cap not in (-1, None) else ""
-        store.add(mcard(r["id"], h(m.subs.get(r["subscriptionId"], "")), info))
-    sources = set()
-    for r in m.of_type("microsoft.insights/datacollectionrules"):
-        streams = sorted({s.replace("Microsoft-", "") for f in P(r).get("dataFlows", []) for s in f.get("streams", [])})
-        dcr.add(mcard(r["id"], h(", ".join(streams))[:150]))
-        for t in m.refs(r["id"]):
-            if m.res[t]["type"] in ("microsoft.operationalinsights/workspaces", "microsoft.monitor/accounts"):
-                page.edge(r["id"], t, E_FLOW, "sends to")
-    for a in m.snap.get("dcrAssociations", []):
-        s, rule = m.owner(a["id"].split("/providers/microsoft.insights/")[0]), m.owner(a.get("rule"))
-        if s and rule:
-            if s not in sources:
-                sources.add(s)
-                src.add(mcard(s))
-            page.edge(s, rule, E_FLOW)
-    if not src.children:
-        src.add(card("mon:nosrc", "<i>no agent associations</i>", "Other"))
-    for r in m.of_type("microsoft.insights/metricalerts", "microsoft.insights/scheduledqueryrules",
-                       "microsoft.insights/activitylogalerts", "microsoft.alertsmanagement/prometheusrulegroups"):
-        p = P(r)
-        targets = [m.res[t]["name"] for t in m.refs(r["id"]) if m.res[t]["type"] != "microsoft.insights/actiongroups"]
-        info = (f"sev {p['severity']}" if "severity" in p else "") + ("" if p.get("enabled", True) else " · <b>DISABLED</b>")
-        alerts.add(mcard(r["id"], info, ("on " + h(", ".join(targets[:2]))) if targets else ""))
-        for t in m.refs(r["id"]):
-            if m.res[t]["type"] == "microsoft.insights/actiongroups":
-                page.edge(r["id"], t, E_FLOW)
-    alerts.cols = 2 if len(alerts.children) > 6 else 1
-    for r in m.of_type("microsoft.insights/actiongroups"):
-        ags.add(mcard(r["id"], receivers(r)))
-        for t in m.refs(r["id"]):
-            if t not in {b.key for b in recv.children}:
-                recv.add(mcard(t))
-            page.edge(r["id"], t, E_FLOW, "calls")
-    for b in (dcr, store, alerts, ags, recv):
-        if not b.children:
-            b.add(card(b.key + ":none", "<i>none</i>", "Other"))
-    return page
+    gw_vnet = {}
+    for g in m.of_type("microsoft.network/virtualnetworkgateways"):
+        for s in m.strings(g["id"]):
+            mt = SUBNET_RE.match(s)
+            if mt:
+                gw_vnet[g["id"]] = mt.group(1).lower().split("/subnets/")[0]
+                break
+    vpn = collections.defaultdict(list)
+    for c in m.of_type("microsoft.network/connections"):
+        p = P(c)
+        a = gw_vnet.get(m.owner((p.get("virtualNetworkGateway1") or {}).get("id")))
+        lng = m.owner((p.get("localNetworkGateway2") or {}).get("id"))
+        other = gw_vnet.get(m.owner((p.get("virtualNetworkGateway2") or {}).get("id")))
+        status = p.get("connectionStatus", "")
+        warn = "" if status in ("Connected", "") else "⚠ "
+        if a and lng:
+            lp = P(m.res[lng])
+            vpn[a].append(f"{warn}VPN → {h(m.res[lng]['name'])} (peer {h(lp.get('gatewayIpAddress', ''))}, "
+                          f"{h(', '.join((lp.get('localNetworkAddressSpace') or {}).get('addressPrefixes', [])))}) {h(status)}")
+        elif a and other:
+            vpn[a].append(f"{warn}VPN → {h(vname(other))} {h(status)}")
 
-
-# ------------------------------------------------------------------ access
-def access_page(m, date):
-    page = Page("Access", f"<b style='font-size:20px'>Access (role assignments)</b><br>Snapshot {date}. "
-                          "<font color='#CF222E'>⚠ = Owner / Contributor / User Access Administrator</font>")
-    names = {}
-    for r in m.res.values():
-        pid = (r.get("identity") or {}).get("principalId")
-        if pid:
-            names[pid] = (f"{r['name']}", "system identity")
-        if r["type"] == "microsoft.managedidentity/userassignedidentities":
-            names[P(r).get("principalId")] = (r["name"], "managed identity")
-
-    def scope_label(s):
-        if s.startswith("/providers/microsoft.management/managementgroups/"):
-            return "mgmt group " + s.rsplit("/", 1)[-1]
-        parts = s.split("/")
-        if len(parts) == 3:
-            return "subscription " + m.subs.get(parts[2], parts[2][:8])
-        if len(parts) == 5:
-            return "RG " + parts[4]
-        o = m.owner(s)
-        return m.res[o]["name"] if o else s.rsplit("/", 1)[-1]
-
-    by_p = collections.defaultdict(list)
-    for a in m.roles:
-        by_p[a["principalId"]].append(a)
-    groups = collections.defaultdict(list)
-    for pid, assigns in by_p.items():
-        nm, kind = names.get(pid, (f"{pid[:8]}…", assigns[0].get("principalType") or "Unknown"))
-        groups[kind].append((nm, pid, assigns))
-    grid = page.root.add(cont("acc:grid", "", "plain", "h"))
-    for kind in sorted(groups):
-        items = sorted(groups[kind])
-        g = grid.add(cont("acc:" + kind, f"<b>{h(kind)}</b> ({len(items)})", "group", "grid",
-                          cols=max(1, min(3, math.ceil(len(items) / 8)))))
-        for nm, pid, assigns in items:
-            lines, sts, risky = [f"<b>{h(nm)}</b>"], set(), False
-            for a in sorted(assigns, key=lambda a: a["roleName"]):
-                bad = a["roleName"].lower() in RISKY_ROLES
-                risky |= bad
-                tag = {"added": " (NEW)", "removed": " (REMOVED)", "changed": " (CHANGED)"}.get(m.st(a["id"]), "")
-                if m.st(a["id"]):
-                    sts.add(m.st(a["id"]))
-                line = f"{'⚠ ' if bad else ''}{h(a['roleName'])} → {h(scope_label(a['scope']))}{tag}"
-                lines.append(f"<font color='#CF222E'>{line}</font>" if bad else line)
-            status = sorted(sts)[0] if sts else ("risk" if risky else None)
-            g.add(card("acc:" + pid, "<br>".join(lines), "Security" if risky else "Other", status, w=280))
-    return page
-
-
-# ------------------------------------------------------------------ changes
-def changes_page(m, date):
-    ch = m.changes
-    page = Page("Changes", f"<b style='font-size:20px'>Changes</b><br>" +
-                (f"{ch['from']} → {ch['to']}" if ch.get("from") else f"First snapshot {date} — baseline"))
-    row = page.root.add(cont("chg:row", "", "plain", "h"))
-    if not ch.get("from") or not (ch["added"] or ch["changed"] or ch["removed"]):
-        row.add(card("chg:none", "Nothing to compare yet" if not ch.get("from") else "No changes", "Other", w=300))
-        return page
-    for kind, title in (("added", "Added"), ("changed", "Changed"), ("removed", "Removed")):
-        if not ch[kind]:
+    grid = page.root.add(cont("net:grid", "", "plain", "grid", cols=3))
+    for sub_id, sub_name in sorted(m.subs.items(), key=lambda x: x[1]):
+        vs = [v for v in vnets if v["subscriptionId"] == sub_id]
+        if not vs:
             continue
-        col = row.add(cont("chg:" + kind, f"<b>{title}</b> ({len(ch[kind])})", "group", "grid",
-                           cols=max(1, min(3, math.ceil(len(ch[kind]) / 10)))))
-        for x in ch[kind]:
-            lines = [STATUS_TAG[kind], f"<b>{h(x.get('name'))}</b>", f"<font color='#555555'>{h(short(x.get('type')))}</font>"]
-            if x.get("resourceGroup"):
-                lines.append("RG " + h(x["resourceGroup"]))
-            lines += [h(f) for f in x.get("fields", [])]
-            if x.get("moreFields"):
-                lines.append(f"… +{x['moreFields']} more")
-            lines.append("by " + h(x.get("by") or "unknown"))
-            col.add(card("chg:" + x["id"], "<br>".join(lines), category(x.get("type") or ""), kind, w=280))
+        sbox = grid.add(cont("net:" + sub_id, f"<b>{h(sub_name)}</b>", "sub", "v"))
+        for v in vs:
+            subnets = P(v).get("subnets", [])
+            space = ", ".join(P(v).get("addressSpace", {}).get("addressPrefixes", []))
+            title = [f"<b>{h(v['name'])}</b> · {h(space)}"]
+            for pe in P(v).get("virtualNetworkPeerings", []):
+                pp = pe.get("properties") or {}
+                remote = ((pp.get("remoteVirtualNetwork") or {}).get("id") or "").lower()
+                state = pp.get("peeringState", "")
+                if remote:
+                    title.append(("⚠ " if state != "Connected" else "") + f"↔ {h(vname(remote))}"
+                                 + ("" if state == "Connected" else f" {h(state)}"))
+            title += vpn.get(v["id"], [])
+            vbox = sbox.add(cont(v["id"], "<br>".join(title), "vnet", "grid", cols=2 if len(subnets) > 3 else 1))
+            for s in subnets:
+                sp, sid = s.get("properties", {}), s["id"].lower()
+                prefix = sp.get("addressPrefix") or ", ".join(sp.get("addressPrefixes", []))
+                lines, risk = [f"<b>{h(s['name'])}</b>", h(prefix)], False
+                nsg = m.owner((sp.get("networkSecurityGroup") or {}).get("id"))
+                if nsg:
+                    rules = nsg_open_rules(m.res[nsg])
+                    lines.append(f"NSG {h(m.res[nsg]['name'])}")
+                    lines += [f"<font color='#CF222E'>⚠ open {h(x)}</font>" for x in rules]
+                    risk = bool(rules)
+                else:
+                    lines.append("<i>no NSG</i>")
+                nat = m.owner((sp.get("natGateway") or {}).get("id"))
+                if nat:
+                    lines.append(f"NAT {h(m.res[nat]['name'])}")
+                if pe_in[sid]:
+                    lines.append(f"{pe_in[sid]} private endpoints")
+                vbox.add(card(sid, "<br>".join(lines), "Network", "risk" if risk else None, w=190))
     return page
+
+
+# ------------------------------------------------------------------ monitoring (compact, per subscription)
+ALERT_KINDS = (("microsoft.insights/metricalerts", "metric"), ("microsoft.insights/scheduledqueryrules", "log"),
+               ("microsoft.insights/activitylogalerts", "activity"),
+               ("microsoft.alertsmanagement/prometheusrulegroups", "Prometheus groups"),
+               ("microsoft.alertsmanagement/smartdetectoralertrules", "smart detector"),
+               ("microsoft.insights/webtests", "availability tests"))
+
+
+def monitoring_page(m, date):
+    page = Page("Monitoring", "<b style='font-size:20px'>Monitoring &amp; alerts</b><br>"
+                f"Snapshot {date} · per subscription: where logs/metrics are stored, how many alert rules, "
+                "and where alerts are sent (action group → Logic App / e-mail / webhook)")
+    grid = page.root.add(cont("mon:grid", "", "plain", "grid", cols=3))
+    recv = page.root.add(cont("mon:recv", "<b>Alert receivers (Logic Apps, Functions, Event Hubs)</b>", "ext", "h"))
+    for sub_id, sub_name in sorted(m.subs.items(), key=lambda x: x[1]):
+        mine = [r for r in m.res.values() if r["subscriptionId"] == sub_id]
+        stores = [r for r in mine if r["type"] in ("microsoft.operationalinsights/workspaces", "microsoft.monitor/accounts")]
+        dcrs = [r for r in mine if r["type"] == "microsoft.insights/datacollectionrules"]
+        ags = sorted((r for r in mine if r["type"] == "microsoft.insights/actiongroups"), key=lambda r: r["name"])
+        counts = collections.Counter()
+        disabled = 0
+        for r in mine:
+            for t, word in ALERT_KINDS:
+                if r["type"] == t:
+                    counts[word] += 1
+                    disabled += P(r).get("enabled", True) is False
+        if not (stores or dcrs or ags or counts):
+            continue
+        box = grid.add(cont("mon:" + sub_id, f"<b>{h(sub_name)}</b>", "sub", "v"))
+        for r in sorted(stores, key=lambda r: r["name"]):
+            p = P(r)
+            cap = (p.get("workspaceCapping") or {}).get("dailyQuotaGb", -1)
+            info = (f"{p.get('retentionInDays')} days" if p.get("retentionInDays") else "Prometheus metrics")
+            info += f" · cap {cap} GB/day" if cap not in (-1, None) else ""
+            box.add(card(r["id"], f"<b>{h(r['name'])}</b><br>{h(short(r['type']))}<br>{info}", "Monitoring", w=240))
+        if dcrs:
+            streams = sorted({s.replace("Microsoft-", "") for r in dcrs for f in P(r).get("dataFlows", [])
+                              for s in f.get("streams", [])})
+            box.add(card("mon:dcr:" + sub_id, f"<b>Data collection rules ×{len(dcrs)}</b><br>" +
+                         h(", ".join(streams))[:160], "Monitoring", w=240))
+        if counts:
+            box.add(card("mon:alerts:" + sub_id, f"<b>Alert rules ×{sum(counts.values())}</b><br>" +
+                         "<br>".join(f"{n} {w}" for w, n in counts.most_common()) +
+                         (f"<br><font color='#CF222E'>{disabled} disabled</font>" if disabled else ""), "Monitoring", w=240))
+        for ag in ags:
+            box.add(card(ag["id"], f"<b>{h(ag['name'])}</b><br>action group<br>{h(receivers(ag))}", "Security", w=240))
+            for t in m.refs(ag["id"]):
+                if t not in {b.key for b in recv.children}:
+                    tr = m.res[t]
+                    recv.add(card(t, f"<b>{h(tr['name'])}</b><br>{h(short(tr['type']))}<br>{h(m.subs.get(tr['subscriptionId'], ''))}",
+                                  "External"))
+                page.edge(ag["id"], t, E_FLOW)
+    if not recv.children:
+        page.root.children.remove(recv)
+    return page
+
+
+# ------------------------------------------------------------------ grouping of similar environments
+GENERIC_SUFFIX = {"nsg", "vmss", "pip", "nic", "vnet", "subnet", "kv", "st", "rg", "identity", "default",
+                  "agentpool", "cus", "eus", "centralus", "eastus"}
+SIMILAR = 0.5          # share of identical (type, name-with-<env>) pairs to count as "same structure"
+OWN_PAGE_TYPES = ("microsoft.network/connections", "microsoft.network/virtualnetworkgateways")  # VPN = special
+
+
+def env_tokens(resources, sub_name):
+    """The environment word used in resource names of a subscription (dev, qa, stg, ...)."""
+    c = collections.Counter()
+    for r in resources:
+        n = r["name"].lower()
+        if "-" in n:
+            last = re.sub(r"\d+$", "", n.rsplit("-", 1)[1])
+            if 2 <= len(last) <= 12 and last not in GENERIC_SUFFIX:
+                c[last] += 1
+    toks = {t for t, k in c.most_common(1) if k >= 3}
+    return toks | {sub_name.lower()}
+
+
+def env_norm(text, toks):
+    for t in sorted(toks, key=len, reverse=True):
+        text = re.sub(r"(?<![a-z])" + re.escape(t) + r"(?![a-z])", "<env>", text, flags=re.I)
+    return text
+
+
+def group_subscriptions(m, subs):
+    """[[sub, ...], ...]: subscriptions with the same structure share one page."""
+    data = {}
+    for s in subs:
+        rs = [r for r in m.res.values() if r["subscriptionId"] == s and not r["type"].startswith(HIDE)
+              and not r["resourceGroup"].startswith("mc_")]
+        toks = env_tokens(rs, m.subs[s])
+        data[s] = (toks, {(r["type"], env_norm(r["name"], toks).lower()) for r in rs},
+                   any(r["type"] in OWN_PAGE_TYPES for r in rs))
+    groups = []
+    for s in sorted(subs, key=lambda x: -len(data[x][1])):
+        toks, sig, special = data[s]
+        home = None
+        if not special and sig:
+            for g in groups:
+                if not data[g[0]][2] and any(len(sig & data[o][1]) / len(sig | data[o][1]) >= SIMILAR for o in g):
+                    home = g
+                    break
+        (home.append(s) if home else groups.append([s]))
+    return groups, {s: d[0] for s, d in data.items()}
+
+
+def group_model(m, members, tokens):
+    """A Model where the resources of several similar subscriptions are merged by their <env> name."""
+    gid = "grp-" + "-".join(sorted(members))[:40]
+    merged, presence, open_in = {}, collections.defaultdict(set), collections.defaultdict(set)
+    for s in members:
+        for r in m.res.values():
+            if r["subscriptionId"] != s:
+                continue
+            raw = env_norm(json.dumps(r).replace(s, gid), tokens[s])
+            nr = json.loads(raw)
+            nr["id"] = nr["id"].lower()
+            risky = (nr["type"] in PAAS and exposure(nr) == "open") or \
+                    (nr["type"] == "microsoft.network/networksecuritygroups" and bool(nsg_open_rules(nr)))
+            if risky:
+                open_in[nr["id"]].add(m.subs[s])
+            if nr["id"] not in merged or (risky and len(open_in[nr["id"]]) == 1):
+                merged[nr["id"]] = nr  # if any environment is open, show that version
+            presence[nr["id"]].add(m.subs[s])
+    title = " · ".join(sorted(m.subs[s] for s in members))
+    g = Model({"resources": list(merged.values()),
+               "containers": [{"type": "microsoft.resources/subscriptions", "subscriptionId": gid, "name": title}]},
+              {"added": [], "changed": [], "removed": []})
+    g.presence, g.group_size, g.open_in = presence, len(members), open_in
+    return g, gid, title
 
 
 # ------------------------------------------------------------------ main
@@ -850,12 +945,36 @@ def main():
 
     pages = []
     subs_with_res = [s for s in sorted(m.subs, key=lambda s: m.subs[s]) if any(r["subscriptionId"] == s for r in m.res.values())]
-    if len(subs_with_res) > 1:
-        pages.append(("1-overview", overview_page(m, date, summary)))
-    for s in subs_with_res:
-        pages.append((f"2-infra-{slug(m.subs[s])}", infra_page(m, s, m.subs[s], date, summary)))
-    pages.append(("3-monitoring", monitoring_page(m, date)))
-    pages.append(("4-access", access_page(m, date)))
+    pages.append(("1-overview", overview_page(m, date, summary)))
+    pages.append(("2-network", network_page(m, date)))
+    groups, tokens = group_subscriptions(m, subs_with_res)
+    SMALL = 20
+    size = collections.Counter(r["subscriptionId"] for r in m.res.values() if not r["type"].startswith(HIDE))
+    small = [g[0] for g in groups if len(g) == 1 and size[g[0]] < SMALL]
+    if len(small) < 2:  # a single small subscription keeps its own page
+        small = []
+    groups = [g for g in groups if not (len(g) == 1 and g[0] in small)]
+    for members in sorted(groups, key=lambda g: (len(g) == 1, m.subs[g[0]])):
+        if len(members) == 1:
+            s = members[0]
+            pages.append((f"3-env-{slug(m.subs[s])}", infra_page(m, s, m.subs[s], date, summary)))
+        else:
+            gm, gid, title = group_model(m, members, tokens)
+            page = infra_page(gm, gid, title, date, summary)
+            page.root.children[0].label = page.root.children[0].label.replace(
+                "Snapshot", "Same structure — names use &lt;env&gt;; “only in” = not in every environment<br>Snapshot", 1)
+            pages.append((f"3-env-{slug('-'.join(sorted(m.subs[x] for x in members)))}", page))
+    if small:
+        combo = Page("Small subscriptions", "<b style='font-size:20px'>Small subscriptions</b><br>"
+                     f"Snapshot {date} · subscriptions with fewer than {SMALL} resources<br>"
+                     "<font color='#CF222E'>■ red border = open to the Internet</font>")
+        grid = combo.root.add(cont("small:grid", "", "plain", "grid", cols=2))
+        for s in sorted(small, key=lambda x: m.subs[x]):
+            one = infra_page(m, s, m.subs[s], date, summary)
+            box = grid.add(cont("small:" + s, f"<b>{h(m.subs[s])}</b>", "sub", "v"))
+            box.children = one.root.children[1:]
+        pages.append(("3-env-small-subscriptions", combo))
+    pages.append(("4-monitoring", monitoring_page(m, date)))
 
     OUT.mkdir(exist_ok=True)
     BUILD.mkdir(exist_ok=True)
