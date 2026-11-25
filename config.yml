@@ -1,11 +1,12 @@
-# Environment pages. One line = one diagram (a "/" in the name = sub-folder in diagrams/).
-#   merge:        same structure -> ONE template page, names use <env>, "only in" marks differences
-#   side_by_side: subscriptions drawn next to each other as they are
-# Subscriptions not listed here are drawn on "other-subscriptions".
+# Diagrams per subscription (one environment = one subscription).
+# One entry = one diagram; "/" in the name = sub-folder in diagrams/.
+#   merge:        same structure -> ONE template diagram, names use <env>, "only in" marks differences
+#   side_by_side: subscriptions drawn as they are
+# Subscriptions not listed here are drawn on subscriptions/other.
 pages:
-  - name: environments/non-prod
+  - name: subscriptions/non-prod
     merge: [Development, QA, Staging, Demo, Integration]
-  - name: environments/prod
+  - name: subscriptions/production
     side_by_side: [Production]
-  - name: shared
+  - name: subscriptions/shared
     side_by_side: [Shared]
