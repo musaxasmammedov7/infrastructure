@@ -81,5 +81,7 @@ jobs:
             echo "Nothing to commit"
           else
             git commit -m "diagrams: $(date -u +%F)"
+            # someone may have pushed while we ran: replay our generated files on top (ours win)
+            git pull --rebase -X theirs origin main
             git push
           fi
