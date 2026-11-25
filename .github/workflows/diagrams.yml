@@ -59,13 +59,13 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb /tmp/drawio.deb
 
-      - name: Export PNG + SVG
+      - name: Export PNG
         run: |
           # draw.io needs absolute paths and exits 0 even on errors, so check the output files.
-          for f in "$GITHUB_WORKSPACE"/diagrams/*.drawio; do
-            xvfb-run -a drawio -x -f png --scale 1.5 -b 10 -o "${f%.drawio}.png" "$f" --no-sandbox --disable-gpu 2>&1 | grep -v bus.cc || true
-            xvfb-run -a drawio -x -f svg --embed-diagram -b 10 -o "${f%.drawio}.svg" "$f" --no-sandbox --disable-gpu 2>&1 | grep -v bus.cc || true
-            test -s "${f%.drawio}.png" && test -s "${f%.drawio}.svg" || { echo "::error::export failed for $f"; exit 1; }
+          for f in "$GITHUB_WORKSPACE"/build/*.drawio; do
+            png="$GITHUB_WORKSPACE/diagrams/$(basename "${f%.drawio}").png"
+            xvfb-run -a drawio -x -f png --scale 1.5 -b 10 -o "$png" "$f" --no-sandbox --disable-gpu 2>&1 | grep -v bus.cc || true
+            test -s "$png" || { echo "::error::export failed for $f"; exit 1; }
           done
           ls -la diagrams
 
