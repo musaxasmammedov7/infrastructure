@@ -61,9 +61,11 @@ jobs:
 
       - name: Export PNG + SVG
         run: |
-          for f in diagrams/*.drawio; do
-            xvfb-run -a drawio --no-sandbox --disable-gpu -x -f png --scale 1.5 -b 10 -o "${f%.drawio}.png" "$f"
-            xvfb-run -a drawio --no-sandbox --disable-gpu -x -f svg --embed-diagram -b 10 -o "${f%.drawio}.svg" "$f"
+          # draw.io needs absolute paths and exits 0 even on errors, so check the output files.
+          for f in "$GITHUB_WORKSPACE"/diagrams/*.drawio; do
+            xvfb-run -a drawio --no-sandbox --disable-gpu -x -f png --scale 1.5 -b 10 -o "${f%.drawio}.png" "$f" 2>/dev/null
+            xvfb-run -a drawio --no-sandbox --disable-gpu -x -f svg --embed-diagram -b 10 -o "${f%.drawio}.svg" "$f" 2>/dev/null
+            test -s "${f%.drawio}.png" && test -s "${f%.drawio}.svg" || { echo "::error::export failed for $f"; exit 1; }
           done
           ls -la diagrams
 
