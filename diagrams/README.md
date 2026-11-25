@@ -1,10 +1,28 @@
 # Azure diagrams — 2026-11-25
 
-Changes: first snapshot (baseline)
+Changes: first snapshot (baseline) — details: [changes/2026-11-25.md](../changes/2026-11-25.md)
 
-- [Overview](1-overview.md) — Subscriptions and what is inside them. Arrows = one resource references another.
-- [Network](2-network.md) — VNets, subnets, NSGs with rules open to the Internet, public IPs, public PaaS endpoints.
-- [Environment](3-environment.md) — Resources per resource group and the links between them (monitoring hidden, see 4).
-- [Monitoring & alerts](4-monitoring.md) — Data collection rules, workspaces, alert rules and where alerts go. Diagnostic settings are not visible in Resource Graph.
-- [Access](5-access.md) — Role assignments: who has which role on which scope. ⚠ = Owner/Contributor/User Access Admin.
-- [Changes](6-changes.md) — What was added, changed or removed since the previous snapshot.
+## Infra Azure subscription 1
+
+![Infra Azure subscription 1](2-infra-azure-subscription-1.png)
+
+Edit: [2-infra-azure-subscription-1.drawio](2-infra-azure-subscription-1.drawio) · vector: [2-infra-azure-subscription-1.svg](2-infra-azure-subscription-1.svg)
+
+## Monitoring
+
+![Monitoring](3-monitoring.png)
+
+Edit: [3-monitoring.drawio](3-monitoring.drawio) · vector: [3-monitoring.svg](3-monitoring.svg)
+
+## Access
+
+![Access](4-access.png)
+
+Edit: [4-access.drawio](4-access.drawio) · vector: [4-access.svg](4-access.svg)
+
+## Changes
+
+![Changes](5-changes.png)
+
+Edit: [5-changes.drawio](5-changes.drawio) · vector: [5-changes.svg](5-changes.svg)
+
